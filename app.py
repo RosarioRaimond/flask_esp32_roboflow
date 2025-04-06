@@ -3,8 +3,8 @@ import requests
 
 app = Flask(__name__)
 
-ROBOFLOW_API_URL = "https://detect.roboflow.com/YOUR_MODEL/1"
-ROBOFLOW_API_KEY = "YOUR_API_KEY"
+ROBOFLOW_API_URL = "https://detect.roboflow.com/rosario-g9eqt/1"
+ROBOFLOW_API_KEY = "tuTdlZTbWrN3FISzqHsE"
 
 def upload_to_free_image_host(image_file):
     response = requests.post(
