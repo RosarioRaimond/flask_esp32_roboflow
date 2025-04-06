@@ -1,50 +1,61 @@
 import os
-import uuid
 from flask import Flask, request, jsonify
 import requests
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'static/uploads'
+
+UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Replace with your actual Render domain
-BASE_URL = 'https://flask-esp32-roboflow.onrender.com'
+ROBOFLOW_API_KEY = "tuTdlZTbWrN3FISzqHsE"
+WORKFLOW_URL = "https://detect.roboflow.com/infer/workflows/rosario-g9eqt/custom-workflow"
 
 @app.route('/')
 def home():
-    return 'ESP32-CAM Flask-Roboflow Server'
+    return "Flask + 0x0.st + Roboflow app is running."
 
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
+        return jsonify({'error': 'No file part in request'}), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+    image_file = request.files['file']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
 
-    filename = f"{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
+    # Save to local (optional but good for backup/debug)
+    filename = secure_filename(image_file.filename)
+    local_path = os.path.join(UPLOAD_FOLDER, filename)
+    image_file.save(local_path)
 
-    # Build public image URL
-    image_url = f"{BASE_URL}/{filepath}"
+    # Upload to 0x0.st
+    with open(local_path, 'rb') as f:
+        upload_response = requests.post("https://0x0.st", files={'file': f})
+    if upload_response.status_code != 200:
+        return jsonify({'error': 'Upload to 0x0.st failed'}), 500
 
-    # Send to Roboflow
-    roboflow_url = "https://detect.roboflow.com/infer/workflows/rosario-g9eqt/custom-workflow"
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "api_key": "tuTdlZTbWrN3FISzqHsE",  # Your Roboflow API key
+    image_url = upload_response.text.strip()
+
+    # Send image URL to Roboflow
+    roboflow_payload = {
+        "api_key": ROBOFLOW_API_KEY,
         "inputs": {
-            "image": {
-                "type": "url",
-                "value": image_url
-            }
+            "image": {"type": "url", "value": image_url}
         }
     }
 
-    response = requests.post(roboflow_url, json=data, headers=headers)
-    if response.status_code != 200:
-        return jsonify({"error": "Roboflow request failed", "details": response.text}), 500
+    roboflow_response = requests.post(
+        WORKFLOW_URL,
+        headers={'Content-Type': 'application/json'},
+        json=roboflow_payload
+    )
 
-    return jsonify(response.json())
+    if roboflow_response.status_code != 200:
+        return jsonify({'error': 'Roboflow failed', 'details': roboflow_response.text}), 500
+
+    return roboflow_response.json()
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
