@@ -5,8 +5,8 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 UPLOAD_FOLDER = '/tmp'
-ROBOFLOW_API_KEY = os.getenv("tuTdlZTbWrN3FISzqHsE")
-ROBOFLOW_MODEL_ENDPOINT = os.getenv("https://detect.roboflow.com/rosario-g9eqt/1")  # e.g., "https://detect.roboflow.com/your-model/1"
+ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
+ROBOFLOW_MODEL_ENDPOINT = os.getenv("ROBOFLOW_MODEL_ENDPOINT")  # e.g., "https://detect.roboflow.com/your-model/1"
 
 @app.route('/')
 def home():
